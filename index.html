@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nabeeha Mahanta · Astrophysics & Data</title>
+<meta name="description" content="Nabeeha Mahanta: MSc (Advanced) Astronomy & Astrophysics student at ANU and data analyst. Explore her research in an interactive 3D observatory.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,400&family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   COLOURS & FONTS: change these to restyle the site
+   ========================================================= */
+:root{
+  --night:#050914;
+  --ink:#141a2a;            /* text in panels */
+  --muted:#5b6478;
+  --line:#e4e6ec;
+  --soft:#f4f5f8;
+  --accent:#4b52d1;         /* indigo */
+  --accent-soft:#ebecfb;
+  --gold:#f2b260;           /* marker / starlight gold */
+  --heading:'Plus Jakarta Sans', system-ui, sans-serif;
+  --sans:'Inter', system-ui, -apple-system, sans-serif;
+  --serif:'Fraunces', Georgia, serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);color:var(--ink);background:var(--night);line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden}
+img{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font:inherit;cursor:pointer}
+
+/* ---------- 3D stage ---------- */
+#scene{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;
+  background:radial-gradient(120% 90% at 60% 100%, #1a2b55 0%, #0d1730 38%, var(--night) 75%)}
+#scene.grab{cursor:grab}
+#scene.grabbing{cursor:grabbing}
+#scene.hot{cursor:pointer}
+#fade{position:fixed;inset:0;background:#02040a;opacity:0;pointer-events:none;transition:opacity .35s ease;z-index:60}
+#fade.on{opacity:1}
+
+/* Intro overlay (first thing visitors see) */
+#intro{position:fixed;left:0;top:0;bottom:0;z-index:20;display:flex;flex-direction:column;justify-content:center;
+  padding:100px clamp(22px,6vw,88px) 120px;max-width:700px;color:#fff;pointer-events:none;transition:opacity .6s ease,transform .6s ease}
+#intro > *{pointer-events:auto}
+body.exploring #intro{opacity:0;transform:translateX(-30px);pointer-events:none}
+body.exploring #intro > *{pointer-events:none}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:#aebfe8;margin-bottom:20px}
+.eyebrow::before{content:"";width:28px;height:1px;background:#aebfe8}
+#intro h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.8rem,7vw,5.4rem);line-height:1.05;margin-bottom:22px;text-shadow:0 4px 40px rgba(5,9,20,.6)}
+#intro h1 em{font-style:italic;font-weight:400;color:#c9d4ff}
+.tagline{font-family:var(--heading);font-size:clamp(1.25rem,2.3vw,1.65rem);font-weight:700;line-height:1.3;margin-bottom:12px;color:#fff}
+.tagline .hl{color:var(--gold)}
+.sub{color:#c3cde6;font-size:.98rem;margin-bottom:32px}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;font-weight:600;font-size:.95rem;border:0;transition:transform .2s,background .2s,box-shadow .2s}
+.btn:hover{text-decoration:none;transform:translateY(-2px)}
+.btn-primary{background:#fff;color:var(--night)}
+.btn-primary:hover{box-shadow:0 8px 30px rgba(160,180,255,.35)}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+@media (max-width:820px){#intro{justify-content:flex-start;padding-top:90px}}
+
+/* Hotspot markers */
+#markers{position:fixed;inset:0;pointer-events:none;z-index:15}
+.marker{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;padding:0;border:0;background:none;pointer-events:auto;transition:opacity .3s}
+.marker.off{opacity:0;pointer-events:none}
+body.panel-open .marker{opacity:.35}
+body.panel-open .marker.off{opacity:0}
+.marker .ring{position:relative;width:18px;height:18px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(242,178,96,.25),0 0 18px rgba(242,178,96,.8);flex:none}
+.marker .ring::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(242,178,96,.7);animation:ping 2s infinite}
+@keyframes ping{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.marker .lbl{font-size:.8rem;font-weight:600;color:#fff;background:rgba(8,13,30,.78);border:1px solid rgba(255,255,255,.18);padding:5px 11px;border-radius:999px;white-space:nowrap;backdrop-filter:blur(6px);transition:background .2s}
+.marker:hover .lbl,.marker.hover .lbl{background:var(--gold);color:#1a1004;border-color:var(--gold)}
+.marker.door .ring{background:#7cc7ff;box-shadow:0 0 0 4px rgba(124,199,255,.25),0 0 18px rgba(124,199,255,.8)}
+.marker.door .ring::after{border-color:rgba(124,199,255,.7)}
+
+/* Hint */
+#hint{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:25;color:#d6def2;font-size:.85rem;background:rgba(8,13,30,.7);border:1px solid rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .5s;white-space:nowrap}
+#hint.show{opacity:1}
+
+/* Dock navigation */
+#dock{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:4px;padding:6px;border-radius:999px;
+  background:rgba(8,13,30,.72);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none;transition:opacity .3s,transform .3s}
+#dock::-webkit-scrollbar{display:none}
+#dock button{border:0;background:transparent;color:#cdd6ee;font-size:.84rem;font-weight:500;padding:9px 14px;border-radius:999px;white-space:nowrap;transition:background .2s,color .2s}
+#dock button:hover{background:rgba(255,255,255,.1);color:#fff}
+#dock button.active{background:#fff;color:var(--night)}
+#dock .sep{width:1px;height:22px;background:rgba(255,255,255,.18);margin:0 4px;flex:none}
+#dock #areaBtn{color:#7cc7ff}
+#dock #quickBtn{color:var(--gold)}
+@media (min-width:821px){body.panel-open #dock{left:calc((100vw - min(580px,46vw) - 16px) / 2)}}
+#dock{transition:opacity .3s,transform .3s,left .5s cubic-bezier(.2,.8,.2,1)}
+@media (max-width:820px){body.panel-open #dock{opacity:0;pointer-events:none;transform:translate(-50%,20px)}}
+
+/* ---------- Content panel ---------- */
+#panel{position:fixed;top:16px;right:16px;bottom:16px;width:min(580px,46vw);z-index:40;background:#fff;border-radius:22px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45);transform:translateX(calc(100% + 40px));transition:transform .55s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+body.panel-open #panel{transform:none}
+.panel-close{position:absolute;top:14px;right:14px;z-index:2;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:1.25rem;line-height:1}
+.panel-close:hover{background:var(--soft)}
+.panel-scroll{overflow-y:auto;padding:38px clamp(22px,3vw,38px) 44px;-webkit-overflow-scrolling:touch}
+@media (max-width:820px){
+  #panel{top:auto;left:0;right:0;bottom:0;width:auto;height:66vh;border-radius:22px 22px 0 0;transform:translateY(105%)}
+  .panel-scroll{padding-top:30px}
+}
+.sec[hidden]{display:none}
+.kicker{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:10px}
+.sec h2{font-family:var(--heading);font-size:clamp(1.6rem,3vw,2.1rem);line-height:1.15;letter-spacing:-.02em;margin-bottom:16px;padding-right:40px}
+.sec h3{font-family:var(--heading);font-size:1.22rem;line-height:1.25;letter-spacing:-.01em;margin-bottom:10px}
+.sec p{margin-bottom:14px;color:#2b3346}
+.lede{font-size:1.04rem;color:var(--muted)}
+.block{border-top:1px solid var(--line);padding-top:26px;margin-top:26px}
+.meta{font-size:.8rem;color:var(--muted);margin-bottom:8px}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:.74rem;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-bottom:12px}
+.status::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 18px}
+.tag{font-size:.76rem;padding:4px 10px;border-radius:999px;background:var(--soft);border:1px solid var(--line);color:#3c4559}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.stat{background:var(--soft);border-radius:12px;padding:12px}
+.stat b{display:block;font-family:var(--heading);font-size:1.4rem;color:var(--accent);line-height:1.1}
+.stat span{font-size:.74rem;color:var(--muted)}
+.link-btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.92rem;padding:10px 18px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);background:#fff;transition:background .2s,color .2s}
+.link-btn:hover{background:var(--accent);color:#fff;text-decoration:none}
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}
+.gallery figure{border:1px solid var(--line);border-radius:12px;padding:8px;cursor:zoom-in;background:#fff;transition:box-shadow .2s,transform .2s}
+.gallery figure:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(20,26,42,.1)}
+.gallery figure.wide{grid-column:span 2}
+.gallery figcaption{font-size:.72rem;color:var(--muted);padding:6px 2px 0}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.facts div{background:var(--soft);border-radius:12px;padding:12px 14px}
+.facts dt{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.facts dd{font-weight:600;font-size:.92rem}
+.origin{margin-top:18px;padding:16px 18px;border-radius:12px;background:#0d1530;color:#e3e9ff;font-size:1rem}
+.origin::before{content:"✦ ";color:var(--gold)}
+.timeline{position:relative;margin:8px 0 6px 6px}
+.timeline::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:1px;background:var(--line)}
+.item{position:relative;padding:0 0 24px 26px}
+.item::before{content:"";position:absolute;left:-5px;top:7px;width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid var(--accent)}
+.item:first-child::before{background:var(--accent)}
+.item .when{font-size:.78rem;color:var(--muted)}
+.item h3{font-size:1.05rem;margin:2px 0 0}
+.item .org{color:var(--accent);font-weight:500;font-size:.92rem;margin-bottom:6px}
+.item ul{padding-left:18px;color:#3c4559;font-size:.93rem}
+.edu{border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:10px}
+.edu .when{font-size:.76rem;color:var(--muted)}
+.edu h3{font-size:1rem;margin:2px 0}
+.edu .hl{display:inline-block;margin-top:6px;font-size:.72rem;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px}
+.skill-h{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:16px 0 0;font-weight:600}
+.notes{display:grid;gap:12px;margin-top:8px}
+.note{border:1px solid var(--line);border-radius:14px;padding:18px}
+.note .no{font-size:.72rem;font-weight:600;color:var(--accent);letter-spacing:.08em}
+.note h3{margin:6px 0}
+.note p{color:var(--muted);font-size:.93rem;margin:0}
+.note .soon{display:inline-block;margin-top:10px;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.fun-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
+.fun-stats div{background:var(--soft);border-radius:12px;padding:12px;text-align:center}
+.fun-stats b{display:block;font-family:var(--heading);font-size:1.6rem;color:var(--accent);line-height:1.1}
+.fun-stats span{font-size:.72rem;color:var(--muted);line-height:1.3;display:block}
+.sky-card{background:#0b1430;border-radius:16px;padding:16px 16px 12px;margin:18px 0;color:#cfd8f5}
+.sky-card h3{color:#fff;font-size:1.05rem;margin-bottom:2px}
+.sky-card small{color:#8f9bbb;font-size:.74rem}
+#travelMap{width:100%;height:auto;display:block;margin-top:6px}
+#travelMap .lbl{font-family:var(--sans);font-size:21px;fill:#c3cde6}
+#travelMap .home .lbl{fill:var(--gold);font-weight:600}
+.place-list{font-size:.78rem;color:#aab5d3;line-height:1.8;margin-top:6px}
+.place-list b{color:var(--gold);font-weight:600}
+.modes{display:grid;gap:10px}
+.mode{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.mode .em{font-size:1.6rem;line-height:1}
+.mode h3{font-size:1rem;margin:0 0 2px}
+.mode p{margin:0;color:var(--muted);font-size:.9rem}
+.fact-box{margin-top:16px;border-radius:14px;background:var(--accent-soft);padding:16px 18px}
+.fact-box .label{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.fact{display:block;font-family:var(--heading);font-weight:700;font-size:1.05rem;margin:6px 0 12px;min-height:2.6em;transition:opacity .2s}
+.fact-btn{border:0;background:var(--accent);color:#fff;font-weight:600;font-size:.86rem;padding:9px 16px;border-radius:999px}
+.contact-links{display:grid;gap:10px;margin-top:10px}
+.contact-links a{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;color:var(--ink);font-weight:600}
+.contact-links a:hover{border-color:var(--accent);text-decoration:none}
+.contact-links a span{margin-left:auto;font-weight:400;color:var(--muted);font-size:.85rem}
+svg.i{width:20px;height:20px;flex:none;color:var(--accent)}
+
+/* Lightbox */
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(3,6,14,.9);display:none;align-items:center;justify-content:center;padding:4vw;cursor:zoom-out}
+.lightbox.open{display:flex}
+.lightbox img{max-height:86vh;border-radius:10px;background:#fff;padding:10px}
+
+/* ---------- Quick view (plain scrolling page) ---------- */
+#quickHeader,#quickFooter{display:none}
+body.quick{overflow:auto;background:#f3f4f7}
+body.quick #scene,body.quick #intro,body.quick #markers,body.quick #dock,body.quick #hint{display:none}
+body.quick #quickHeader{display:block}
+body.quick #quickFooter{display:block;text-align:center;color:var(--muted);font-size:.8rem;padding:10px 20px 40px}
+body.quick #panel{position:relative;z-index:1;transform:none;width:auto;height:auto;max-width:960px;margin:-60px auto 40px;background:transparent;box-shadow:none;border-radius:0;overflow:visible;display:block}
+body.quick .panel-close{display:none}
+body.quick .panel-scroll{overflow:visible;padding:0 clamp(16px,4vw,24px)}
+body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);margin-bottom:22px;box-shadow:0 1px 3px rgba(20,26,42,.06)}
+#quickHeader{position:relative;color:#fff;padding:90px clamp(22px,6vw,88px) 120px;overflow:hidden;
+  background:radial-gradient(120% 120% at 80% 100%, #1a2b55 0%, #0d1730 40%, var(--night) 80%)}
+#quickHeader::before{content:"";position:absolute;inset:0;opacity:.8;background-image:
+  radial-gradient(1px 1px at 12% 18%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 28% 62%,#cfe0ff 50%,transparent 51%),
+  radial-gradient(1.5px 1.5px at 44% 12%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 61% 35%,#ffe9c7 50%,transparent 51%),
+  radial-gradient(1px 1px at 77% 22%,#fff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 88% 54%,#cfe0ff 50%,transparent 51%),
+  radial-gradient(1px 1px at 8% 80%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 52% 78%,#fff 50%,transparent 51%),
+  radial-gradient(1px 1px at 93% 9%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 35% 40%,#fff 50%,transparent 51%)}
+#quickHeader .inner{position:relative;max-width:960px;margin:0 auto}
+#quickHeader h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.6rem,6vw,4.4rem);line-height:1.05;margin-bottom:16px}
+#quickHeader h1 em{font-style:italic;font-weight:400;color:#c9d4ff}
+.qnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.qnav button{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#dfe6fb;padding:7px 14px;border-radius:999px;font-size:.85rem}
+.qnav button:hover{background:rgba(255,255,255,.15)}
+@media (max-width:600px){.stats{grid-template-columns:1fr 1fr 1fr}.fun-stats{grid-template-columns:1fr 1fr}.facts{grid-template-columns:1fr}}
+@media (min-width:900px){
+  body.quick .gallery{grid-template-columns:1fr 1fr 1fr}
+  body.quick .gallery figure.wide{grid-column:span 1}
+  body.quick .notes,body.quick .modes{grid-template-columns:repeat(3,1fr)}
+  body.quick .xp-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:34px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="scene" class="grab" aria-label="Interactive 3D observatory. Use the menu at the bottom to open each section."></canvas>
+<div id="markers"></div>
+<div id="fade"></div>
+
+<!-- ============ INTRO ============ -->
+<div id="intro">
+  <div class="eyebrow">Astrophysics · Data</div>
+  <h1>Nabeeha<br><em>Mahanta</em></h1>
+  <p class="tagline">I turn <span class="hl">starlight</span> into data, and data into answers.</p>
+  <p class="sub">MSc (Advanced) Astronomy &amp; Astrophysics at ANU · Data Analyst at Metroll</p>
+  <div class="btns">
+    <button class="btn btn-primary" id="exploreBtn" type="button">Explore the observatory →</button>
+    <button class="btn btn-ghost quick-link" type="button">Quick view</button>
+  </div>
+</div>
+
+<div id="hint">Drag to look around · click the glowing markers</div>
+
+<!-- ============ DOCK NAVIGATION ============ -->
+<nav id="dock" aria-label="Sections">
+  <button data-sec="about" type="button">About</button>
+  <button data-sec="research" type="button">Research</button>
+  <button data-sec="experience" type="button">Experience</button>
+  <button data-sec="notes" type="button">Field notes</button>
+  <button data-sec="offduty" type="button">Off duty</button>
+  <button data-sec="contact" type="button">Contact</button>
+  <span class="sep"></span>
+  <button id="areaBtn" type="button">Go inside ↗</button>
+  <button id="quickBtn" class="quick-link" type="button">Quick view</button>
+</nav>
+
+<!-- ============ QUICK VIEW HEADER ============ -->
+<header id="quickHeader">
+  <div class="inner">
+    <div class="eyebrow">Astrophysics · Data</div>
+    <h1>Nabeeha <em>Mahanta</em></h1>
+    <p class="tagline">I turn <span class="hl">starlight</span> into data, and data into answers.</p>
+    <p class="sub">MSc (Advanced) Astronomy &amp; Astrophysics at ANU · Data Analyst at Metroll</p>
+    <div class="btns">
+      <button class="btn btn-primary" id="to3dBtn" type="button">Explore the 3D observatory ✦</button>
+      <!-- Upload your CV to assets/ with this exact file name -->
+      <a class="btn btn-ghost" href="assets/Nabeeha_Mahanta_CV.pdf" target="_blank" rel="noopener">Download CV</a>
+    </div>
+    <div class="qnav">
+      <button data-jump="about" type="button">About</button><button data-jump="research" type="button">Research</button><button data-jump="experience" type="button">Experience</button><button data-jump="notes" type="button">Field notes</button><button data-jump="offduty" type="button">Off duty</button><button data-jump="contact" type="button">Contact</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ CONTENT PANEL (all sections live here) ============ -->
+<aside id="panel" aria-live="polite">
+  <button class="panel-close" id="panelClose" type="button" aria-label="Close">×</button>
+  <div class="panel-scroll">
+
+    <!-- ABOUT -->
+    <section class="sec" data-sec="about" hidden>
+      <div class="kicker">About me</div>
+      <h2>From stargazing to star clusters</h2>
+      <p>I'm a master's student at the Australian National University (ANU), where my research asks whether the stellar mass function is universal across star clusters in the Milky Way, using data from Gaia DR3.</p>
+      <p>Before ANU I completed a First-Class BSc in Astrophysics at Aberystwyth University in Wales. There I tracked coronal mass ejections from the Sun to Earth and built a catalogue of interplanetary CMEs as a research intern.</p>
+      <p>By day I'm a data analyst at Metroll, turning business data into clear insights with SQL, Python and Excel. Whether it's a star cluster or a sales report, I like finding the pattern hiding in the noise. A PhD is next on my list, once I've gathered more industry experience.</p>
+      <div class="origin">As a kid I admired the stars and was sure I'd go to one someday. I'm still working on that. For now, I study them.</div>
+      <dl class="facts">
+        <div><dt>Currently</dt><dd>MSc (Advanced), ANU</dd></div>
+        <div><dt>Day job</dt><dd>Data Analyst, Metroll</dd></div>
+        <div><dt>Research</dt><dd>Star clusters · space weather</dd></div>
+        <div><dt>Next</dt><dd>PhD in astrophysics</dd></div>
+        <div><dt>Based in</dt><dd>Canberra, Australia</dd></div>
+        <div><dt>Languages</dt><dd>English · Hindi · Bengali · French</dd></div>
+      </dl>
+    </section>
+
+    <!-- RESEARCH -->
+    <section class="sec" data-sec="research" hidden>
+      <div class="kicker">Research</div>
+      <h2>What I'm observing</h2>
+      <p class="lede">From the stars in Milky Way clusters to eruptions on our own Sun: projects where I use large datasets to answer astrophysical questions.</p>
+
+      <div class="block">
+        <div class="meta">MSc research · Research School of Astronomy &amp; Astrophysics, ANU · 2026–</div>
+        <span class="status">In progress · results coming soon</span>
+        <h3>A Gaia-Based Framework for Measuring Stellar Mass Functions in Milky Way Star Clusters</h3>
+        <p>How many massive stars does a cluster form compared with low-mass ones, and is that ratio the same everywhere? I'm building a framework that uses Gaia DR3 data to measure stellar mass functions in Milky Way star clusters and test whether they are universal.</p>
+        <p>The hard part is getting the counts right: correcting for stars the survey misses (observational incompleteness) and for unresolved binary stars that pass as single, brighter stars.</p>
+        <div class="tags"><span class="tag">Gaia DR3</span><span class="tag">Star clusters</span><span class="tag">Python</span><span class="tag">Completeness corrections</span><span class="tag">Binary stars</span></div>
+      </div>
+
+      <div class="block">
+        <div class="meta">BSc research · Aberystwyth University · 2024–2025</div>
+        <h3>From the Sun to Earth: predicting CME impacts</h3>
+        <p>Coronal mass ejections are huge eruptions of plasma from the Sun. By the time they reach Earth, the solar wind has reshaped them, which makes their impact hard to predict. I linked what we see near the Sun to what arrives at Earth across three solar cycles.</p>
+        <div class="stats">
+          <div class="stat"><b>292</b><span>CME–ICME pairs</span></div>
+          <div class="stat"><b>0.69</b><span>r: CME speed vs transit speed</span></div>
+          <div class="stat"><b>−0.50</b><span>r: transit speed vs storm (Dst)</span></div>
+        </div>
+        <p>I built a standardised dataset from SOHO, STEREO, CDAW, GCS modelling, NASA OMNIWeb and the Richardson &amp; Cane catalogue. The result: faster CMEs near the Sun arrive faster and tend to drive stronger geomagnetic storms.</p>
+        <div class="gallery">
+          <figure class="wide"><img src="assets/cme-dst.png" alt="Scatter plot of CME transit velocity against minimum Dst index for 280 CMEs, correlation −0.50" loading="lazy"><figcaption>Faster CMEs drive stronger geomagnetic storms (more negative Dst).</figcaption></figure>
+          <figure><img src="assets/cme-speed-correlation.png" alt="Near-Sun CME speed against transit speed, Pearson r = 0.69" loading="lazy"><figcaption>Near-Sun speed predicts transit speed.</figcaption></figure>
+          <figure><img src="assets/cme-source-heatmap.png" alt="2D histogram of CME source locations on the Sun" loading="lazy"><figcaption>Where on the Sun the CMEs came from.</figcaption></figure>
+        </div>
+        <div class="tags"><span class="tag">Python</span><span class="tag">Jupyter</span><span class="tag">Plotly</span><span class="tag">GCS modelling</span><span class="tag">Space weather</span></div>
+        <a class="link-btn" href="assets/CME_poster.pdf" target="_blank" rel="noopener">View the full poster (PDF) ↗</a>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section class="sec" data-sec="experience" hidden>
+      <div class="kicker">Experience</div>
+      <h2>Where I've worked &amp; studied</h2>
+      <div class="xp-grid">
+        <div class="timeline">
+          <div class="item">
+            <div class="when">Jun 2026 – present</div>
+            <h3>Data Analyst</h3>
+            <div class="org">Metroll</div>
+            <ul>
+              <li>Analyse datasets, identify trends and present clear insights to support decision-making</li>
+              <li>Data cleaning and reporting with SQL, Excel and Python</li>
+              <li>Communicate findings to technical and non-technical audiences</li>
+            </ul>
+          </div>
+          <div class="item">
+            <div class="when">Jan 2024 – Jan 2025</div>
+            <h3>Research Assistant (internship)</h3>
+            <div class="org">Aberystwyth University</div>
+            <ul>
+              <li>Modelled coronal mass ejections with the Graduated Cylindrical Shell (GCS) model</li>
+              <li>Created and managed a catalogue of interplanetary CMEs (ICMEs)</li>
+              <li>Presented and communicated research results</li>
+            </ul>
+          </div>
+          <div class="item">
+            <div class="when">Oct 2022 – Mar 2023</div>
+            <h3>Physics Mentor</h3>
+            <div class="org">Cardiff University (remote)</div>
+            <ul>
+              <li>Mentored school students across Wales</li>
+              <li>Supervised mentoring projects in multiple schools</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="edu"><div class="when">2026 – 2028 (expected)</div><h3>MSc (Advanced), Astronomy &amp; Astrophysics</h3><div>The Australian National University</div></div>
+          <div class="edu"><div class="when">2021 – 2025</div><h3>BSc, Astrophysics</h3><div>Aberystwyth University, UK</div><span class="hl">First-Class Honours</span></div>
+          <div class="skill-h">Data &amp; code</div>
+          <div class="tags"><span class="tag">Python</span><span class="tag">SQL</span><span class="tag">Excel</span><span class="tag">Jupyter</span><span class="tag">Plotly</span><span class="tag">Data visualisation</span><span class="tag">Statistics</span></div>
+          <div class="skill-h">Astronomy</div>
+          <div class="tags"><span class="tag">Gaia DR3</span><span class="tag">GCS modelling</span><span class="tag">SOHO · STEREO · CDAW</span><span class="tag">Observing proposals</span></div>
+          <div class="skill-h">Communication</div>
+          <div class="tags"><span class="tag">Presenting</span><span class="tag">Mentoring</span><span class="tag">Science writing</span></div>
+        </div>
+      </div>
+      <a class="link-btn" href="assets/Nabeeha_Mahanta_CV.pdf" target="_blank" rel="noopener">Download full CV (PDF) ↓</a>
+    </section>
+
+    <!-- FIELD NOTES -->
+    <section class="sec" data-sec="notes" hidden>
+      <div class="kicker">Field notes</div>
+      <h2>Short stories about big things</h2>
+      <p class="lede">Space science explained without the jargon: bite-sized pieces on the discoveries and ideas I find exciting.</p>
+      <div class="notes">
+        <!-- To publish a note: replace the text and wrap the card in a link to the article -->
+        <article class="note"><span class="no">NOTE 001</span><h3>The Sun sneezes. Should Earth worry?</h3><p>What a coronal mass ejection is, how it crosses 150 million km, and why some hit us harder than others.</p><span class="soon">Coming soon</span></article>
+        <article class="note"><span class="no">NOTE 002</span><h3>Counting stars is harder than it sounds</h3><p>Why astronomers miss stars, mistake two stars for one, and how we correct for both.</p><span class="soon">Coming soon</span></article>
+        <article class="note"><span class="no">NOTE 003</span><h3>Your next idea here</h3><p>A slot for the next discovery that catches my eye.</p><span class="soon">Coming soon</span></article>
+      </div>
+    </section>
+
+    <!-- OFF DUTY -->
+    <section class="sec" data-sec="offduty" hidden>
+      <div class="kicker">Off duty</div>
+      <h2>When the dome closes</h2>
+      <p class="lede">Cloudy night, no observing. Here's what I'm up to instead.</p>
+      <div class="fun-stats">
+        <div><b>13</b><span>places explored</span></div>
+        <div><b>3</b><span>continents called home</span></div>
+        <div><b>4</b><span>languages spoken</span></div>
+        <div><b>∞</b><span>films on the watchlist</span></div>
+      </div>
+      <div class="sky-card">
+        <h3>My travel constellation</h3>
+        <small>Every star is a place I've been · gold star = home</small>
+        <svg id="travelMap" viewBox="0 0 1000 540" role="img" aria-label="Star map of places Nabeeha has travelled"></svg>
+        <p class="place-list"><b>★ India</b> · Nepal · Hong Kong · Macau · Vietnam · Thailand · Singapore · Japan · Papua New Guinea · Australia · United Kingdom · Scotland · Isle of Man</p>
+      </div>
+      <div class="modes">
+        <div class="mode"><span class="em">🎬</span><div><h3>Movie nights</h3><p>Horror, thrillers, romance, sci-fi: any genre, as long as it hooks me. My forever rewatch is <em>3 Idiots</em>: funny, and a reminder that you can become whatever you want.</p></div></div>
+        <div class="mode"><span class="em">🍜</span><div><h3>Eating my way around</h3><p>My favourite way to get to know a city is through its food. And I will never say no to a pain au chocolat.</p></div></div>
+        <div class="mode"><span class="em">🎤</span><div><h3>Comedy shows</h3><p>Live stand-up is my reset button. Samay Raina is a long-time favourite.</p></div></div>
+        <div class="mode"><span class="em">🎯</span><div><h3>Former rifle shooter</h3><p>I qualified for nationals but had to miss them for exams. If I weren't a scientist, I'd be a shooter.</p></div></div>
+      </div>
+      <div class="fact-box">
+        <span class="label">Random fact</span>
+        <span class="fact" id="fact">I've studied in India, Wales and Australia.</span>
+        <button class="fact-btn" id="factBtn" type="button">Tell me another ✦</button>
+      </div>
+      <p style="margin-top:16px"><a href="https://www.instagram.com/nabeeha19/" target="_blank" rel="noopener">More adventures on Instagram →</a></p>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="sec" data-sec="contact" hidden>
+      <div class="kicker">Contact</div>
+      <h2>Let's talk</h2>
+      <p class="lede">Open to research collaborations, data projects and good conversations about the universe.</p>
+      <div class="contact-links">
+        <a href="mailto:nabeehamahanta03@gmail.com"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email<span>nabeehamahanta03@gmail.com</span></a>
+        <a href="https://www.linkedin.com/in/nabeehamahanta/" target="_blank" rel="noopener"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.65 21 11.2 21 14.5V21h-4v-5.8c0-1.4 0-3.2-1.95-3.2S12.8 13.5 12.8 15.1V21H9z"/></svg>LinkedIn<span>/in/nabeehamahanta</span></a>
+        
+        <a href="https://github.com/nabeeha19" target="_blank" rel="noopener"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>GitHub<span>code &amp; projects</span></a>
+        <a href="https://www.instagram.com/nabeeha19/" target="_blank" rel="noopener"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>Instagram<span>@nabeeha19</span></a>
+      </div>
+    </section>
+
+  </div>
+</aside>
+<footer id="quickFooter">© <span class="yr">2026</span> Nabeeha Mahanta · Observed under a southern sky</footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
+<!-- ============ PAGE LOGIC (works with or without 3D) ============ -->
+<script>
+window.UI = (function(){
+  var body = document.body, panel = document.getElementById('panel');
+  var secs = Array.prototype.slice.call(panel.querySelectorAll('.sec'));
+  var dockBtns = Array.prototype.slice.call(document.querySelectorAll('#dock [data-sec]'));
+  var scroller = panel.querySelector('.panel-scroll');
+  var current = null, hintTimer = null;
+
+  function open(sec){
+    if (body.classList.contains('quick')) { jump(sec); return; }
+    current = sec;
+    secs.forEach(function(s){ s.hidden = s.dataset.sec !== sec; });
+    body.classList.add('panel-open');
+    scroller.scrollTop = 0;
+    dockBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.sec === sec); });
+  }
+  function close(fromScene){
+    if (!current) return;
+    current = null;
+    body.classList.remove('panel-open');
+    dockBtns.forEach(function(b){ b.classList.remove('active'); });
+    if (!fromScene && window.__3d) window.__3d.unfocus();
+  }
+  function startExploring(){
+    if (body.classList.contains('exploring')) return;
+    body.classList.add('exploring');
+    var h = document.getElementById('hint');
+    h.classList.add('show');
+    hintTimer = setTimeout(function(){ h.classList.remove('show'); }, 6000);
+  }
+  function hideHint(){ clearTimeout(hintTimer); document.getElementById('hint').classList.remove('show'); }
+  function go(sec){
+    startExploring();
+    if (window.__3d) window.__3d.go(sec); else open(sec);
+  }
+  function setQuick(on){
+    body.classList.toggle('quick', on);
+    current = null;
+    body.classList.remove('panel-open');
+    dockBtns.forEach(function(b){ b.classList.remove('active'); });
+    secs.forEach(function(s){ s.hidden = !on; });
+    window.scrollTo(0,0);
+    if (window.__3d) { on ? window.__3d.pause() : window.__3d.resume(); }
+  }
+  function jump(sec){
+    var el = panel.querySelector('.sec[data-sec="'+sec+'"]');
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  return { open:open, close:close, go:go, setQuick:setQuick, startExploring:startExploring, hideHint:hideHint, get current(){ return current; } };
+})();
+
+(function(){
+  var body = document.body;
+  Array.prototype.forEach.call(document.querySelectorAll('.yr'), function(e){ e.textContent = new Date().getFullYear(); });
+
+  // Dock & buttons
+  document.querySelectorAll('#dock [data-sec]').forEach(function(b){ b.addEventListener('click', function(){ UI.go(b.dataset.sec); }); });
+  document.getElementById('exploreBtn').addEventListener('click', UI.startExploring);
+  document.getElementById('panelClose').addEventListener('click', function(){ UI.close(); });
+  document.getElementById('areaBtn').addEventListener('click', function(){ UI.startExploring(); if (window.__3d) window.__3d.toggleArea(); });
+  document.querySelectorAll('.quick-link').forEach(function(b){ b.addEventListener('click', function(){ location.hash = 'quick'; }); });
+  document.getElementById('to3dBtn').addEventListener('click', function(){ location.hash = 'observatory'; });
+  document.querySelectorAll('[data-jump]').forEach(function(b){ b.addEventListener('click', function(){
+    var el = document.querySelector('.sec[data-sec="'+b.dataset.jump+'"]'); if (el) el.scrollIntoView({behavior:'smooth'}); }); });
+
+  // Quick view on #quick
+  function applyHash(){
+    if (location.hash === '#quick') UI.setQuick(true);
+    else if (body.classList.contains('quick') && !body.classList.contains('no3d')) UI.setQuick(false);
+  }
+  window.addEventListener('hashchange', applyHash);
+  applyHash();
+  // If 3D can't start, fall back to the quick view
+  setTimeout(function(){
+    if (!window.__3d) { body.classList.add('no3d'); document.getElementById('to3dBtn').style.display = 'none'; UI.setQuick(true); }
+  }, 7000);
+
+  // Keyboard
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape') return;
+    var lb = document.getElementById('lightbox');
+    if (lb.classList.contains('open')) lb.classList.remove('open'); else UI.close();
+  });
+
+  // Lightbox for figures
+  var lb = document.getElementById('lightbox'), lbImg = lb.querySelector('img');
+  document.querySelectorAll('.gallery figure').forEach(function(f){
+    f.addEventListener('click', function(){ var im = f.querySelector('img'); lbImg.src = im.src; lbImg.alt = im.alt; lb.classList.add('open'); });
+  });
+  lb.addEventListener('click', function(){ lb.classList.remove('open'); });
+
+  // Random facts: edit or add your own
+  var facts = [
+    "I've studied in India, Wales and Australia.",
+    "I speak English, Hindi and Bengali, plus some French.",
+    "I've been to Papua New Guinea and the Isle of Man. Not many people can say both.",
+    "I analysed 292 solar eruptions to see which ones hit Earth hardest.",
+    "As a kid I was convinced I'd visit a star one day. Still on the to-do list.",
+    "I've mentored physics students in schools across Wales.",
+    "I built a catalogue of interplanetary coronal mass ejections as an undergrad.",
+    "My favourite way to learn a new city: eat my way through it.",
+    "I qualified for nationals in rifle shooting, but had to skip them for exams.",
+    "If I weren't a scientist, I'd be a sport shooter.",
+    "I once sat on a bench in the UK for hours, just watching the northern lights.",
+    "Pulsars are the scariest thing in space to me. Listen to one spinning and you'll see why.",
+    "Mercury fascinates me: it's a one-plate planet, with a single shell for a crust.",
+    "I'll watch any genre, from horror to romance to sci-fi, as long as it hooks me. My comfort rewatch is 3 Idiots.",
+    "I'll never say no to a pain au chocolat.",
+    "Dream team to join: the one that finally finds aliens.",
+    "I built a desktop app that turns invoices into Excel spreadsheets.",
+    "The North Star got me hooked on astronomy, on a beach in Papua New Guinea."
+  ];
+  var fi = 0, factEl = document.getElementById('fact');
+  document.getElementById('factBtn').addEventListener('click', function(){
+    fi = (fi + 1 + Math.floor(Math.random() * (facts.length - 1))) % facts.length;
+    factEl.style.opacity = 0;
+    setTimeout(function(){ factEl.textContent = facts[fi]; factEl.style.opacity = 1; }, 180);
+  });
+
+  // Travel constellation: [name, latitude, longitude, label dx, label dy, home?, star nudge x, y]
+  var places = [
+    ["Scotland",55.9,-3.2, 14,-8], ["Isle of Man",54.2,-4.5, -150,6], ["United Kingdom",51.5,-0.1, -30,38],
+    ["India",28.6,77.2, -66,34, true], ["Nepal",27.7,85.3, 12,-14],
+    ["Hong Kong",22.3,114.2, 14,-6], ["Macau",22.2,113.5, 14,26, false,-6,26], ["Vietnam",21.0,105.8, -96,-14],
+    ["Thailand",13.8,100.5, -98,8], ["Singapore",1.35,103.8, 14,10], ["Japan",35.7,139.7, -62,-16],
+    ["Papua New Guinea",-9.4,147.2, -190,34], ["Australia",-35.3,149.1, -118,8]
+  ];
+  var links = [[0,1],[1,2],[2,3],[3,4],[4,7],[7,6],[6,5],[5,10],[7,8],[8,9],[9,11],[11,12]];
+  function pos(p){
+    var x = 40 + (p[2] + 10) / 170 * 900, y = 30 + (62 - p[1]) / 105 * 480;
+    if (p[2] < 5) x = 40 + (p[2] + 10) * 22;
+    if (p[6]) { x += p[6]; y += p[7]; }
+    return [x, y];
+  }
+  var html = '';
+  for (var i = 0; i < 110; i++) html += '<circle cx="'+(Math.random()*1000).toFixed(1)+'" cy="'+(Math.random()*540).toFixed(1)+'" r="'+(Math.random()*1.3+.3).toFixed(2)+'" fill="#8fa3d6" opacity="'+(Math.random()*.5+.15).toFixed(2)+'"/>';
+  links.forEach(function(l){ var a = pos(places[l[0]]), b = pos(places[l[1]]);
+    html += '<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#7cc7ff" stroke-opacity=".4" stroke-width="1.6" stroke-dasharray="4 6"/>'; });
+  places.forEach(function(p){ var c = pos(p), home = p[5];
+    html += '<g class="'+(home ? 'home' : '')+'"><title>'+p[0]+'</title><circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+(home?14:10)+'" fill="'+(home?'#f2b260':'#7cc7ff')+'" opacity=".2"/>' +
+      '<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+(home?6.5:4.5)+'" fill="'+(home?'#f2b260':'#fff')+'"/>' +
+      '<text class="lbl" x="'+(c[0]+p[3])+'" y="'+(c[1]+p[4])+'">'+p[0]+'</text></g>'; });
+  document.getElementById('travelMap').innerHTML = html;
+})();
+</script>
+
+<!-- ============ 3D OBSERVATORY (Three.js) ============ -->
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const body = document.body;
+const canvas = document.getElementById('scene');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const V3 = THREE.Vector3;
+
+let renderer = null;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch (e) {}
+
+if (!renderer || !renderer.getContext()) {
+  body.classList.add('no3d');
+  document.getElementById('to3dBtn').style.display = 'none';
+  window.UI.setQuick(true);
+} else {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 400);
+  const INSIDE = new V3(200, 0, 0);
+
+  /* ---------- helpers ---------- */
+  const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.08, ...o });
+  const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); return m; };
+  const box = (w, h, d, mat, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), mat, x, y, z);
+  const cyl = (rt, rb, h, mat, x, y, z, seg = 24) => mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat, x, y, z);
+  function canvasTex(w, h, draw) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+  }
+  // place an object on a circle, facing the centre (build objects facing local +z)
+  function place(obj, deg, r, y = 0) {
+    const a = THREE.MathUtils.degToRad(deg);
+    obj.position.set(Math.sin(a) * r, y, Math.cos(a) * r);
+    obj.rotation.y = a + Math.PI;
+    return obj;
+  }
+
+  /* ---------- stars & Milky Way ---------- */
+  const starMat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uPR: { value: renderer.getPixelRatio() } },
+    vertexShader: `attribute float aSize; attribute float aPhase; attribute vec3 aColor;
+      uniform float uTime; uniform float uPR; varying vec3 vColor; varying float vTw;
+      void main(){ vColor = aColor; vTw = 0.6 + 0.4 * sin(uTime * (0.8 + fract(aPhase) * 1.6) + aPhase * 6.283);
+        gl_PointSize = aSize * uPR; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec3 vColor; varying float vTw;
+      void main(){ float d = length(gl_PointCoord - 0.5); gl_FragColor = vec4(vColor, smoothstep(0.5, 0.0, d) * vTw); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  const bandW = new V3(0.15, 0.45, -1).normalize();
+  const bandU = new V3(1, 0.75, 0); bandU.addScaledVector(bandW, -bandU.dot(bandW)).normalize();
+  const bandN = new V3().crossVectors(bandU, bandW);
+  function makeStars(n, band, radius = 120, sizeMul = 1) {
+    const pos = new Float32Array(n * 3), size = new Float32Array(n), phase = new Float32Array(n), col = new Float32Array(n * 3);
+    const pal = ['#ffffff', '#cfe0ff', '#ffe7c4', '#a9c4ff'].map(c => new THREE.Color(c));
+    const v = new V3();
+    for (let i = 0; i < n; i++) {
+      if (band) {
+        const a = Math.random() * Math.PI * 2, s = (Math.random() + Math.random() + Math.random() - 1.5) * 0.16;
+        v.copy(bandU).multiplyScalar(Math.cos(a)).addScaledVector(bandW, Math.sin(a)).addScaledVector(bandN, s).normalize();
+      } else v.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
+      v.multiplyScalar(radius); pos.set([v.x, v.y, v.z], i * 3);
+      const b = Math.pow(Math.random(), band ? 6 : 4);
+      size[i] = (band ? 1.6 + b * 3.5 : 1.8 + b * 7.0) * sizeMul;
+      phase[i] = Math.random() * 10;
+      const c = pal[(Math.random() * pal.length) | 0].clone().multiplyScalar(band ? 0.8 : 1);
+      col.set([c.r, c.g, c.b], i * 3);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    g.setAttribute('aPhase', new THREE.BufferAttribute(phase, 1));
+    g.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+    return new THREE.Points(g, starMat);
+  }
+  const sky = new THREE.Group();
+  sky.add(makeStars(5000, false), makeStars(9000, true));
+  scene.add(sky);
+
+  /* =====================================================
+     OUTSIDE
+     ===================================================== */
+  const outside = new THREE.Group(); scene.add(outside);
+  const groundY = (x, z) => Math.sqrt(Math.max(0, 900 - x * x - z * z)) - 29.2;
+  outside.add(mesh(new THREE.SphereGeometry(30, 96, 48), std(0x0c1528, { roughness: 1 }), 0, -29.2, 0));
+  const farMat = std(0x0a1222, { roughness: 1 });
+  outside.add(mesh(new THREE.SphereGeometry(60, 64, 32), farMat, -26, -58.5, -34));
+  outside.add(mesh(new THREE.SphereGeometry(60, 64, 32), farMat, 34, -59, -40));
+
+  const obs = new THREE.Group(); obs.position.y = 0.78; obs.scale.setScalar(0.82); outside.add(obs);
+  obs.add(cyl(1.15, 1.22, 1.6, std(0xd9dee8), 0, 0.8, 0, 64));
+  const ring = mesh(new THREE.TorusGeometry(1.17, 0.045, 10, 80), std(0x7b869e, { metalness: 0.6, roughness: 0.35 }), 0, 1.6, 0);
+  ring.rotation.x = Math.PI / 2; obs.add(ring);
+  function onWall(m, angle, y, r) { m.position.set(Math.sin(angle) * r, y, Math.cos(angle) * r); m.rotation.y = angle; obs.add(m); return m; }
+  const door = onWall(new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.86), new THREE.MeshBasicMaterial({ color: 0x1a2236 })), 0.15, 0.47, 1.22);
+  const doorLight = onWall(new THREE.Mesh(new THREE.PlaneGeometry(0.38, 0.06), new THREE.MeshBasicMaterial({ color: 0xffc777 })), 0.15, 0.96, 1.225);
+  const winMat = new THREE.MeshBasicMaterial({ color: 0xffc777 });
+  onWall(new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.24), winMat), -0.75, 1.05, 1.18);
+  onWall(new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.24), winMat), 0.95, 1.05, 1.18);
+
+  const domeGroup = new THREE.Group(); domeGroup.position.y = 1.6; obs.add(domeGroup);
+  const R = 1.2, slit = 0.44;
+  domeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(R, 72, 36, Math.PI / 2 + slit / 2, Math.PI * 2 - slit, 0, Math.PI / 2),
+    std(0xf1f4fa, { roughness: 0.32, metalness: 0.35, side: THREE.DoubleSide })));
+  domeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(R * 0.985, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2),
+    std(0x1c1712, { emissive: 0x2a1708, roughness: 1, side: THREE.BackSide })));
+  const dfloor = mesh(new THREE.CircleGeometry(R * 0.98, 48), std(0x120e0b, { emissive: 0x1a0e05 }), 0, 0.005, 0);
+  dfloor.rotation.x = -Math.PI / 2; domeGroup.add(dfloor);
+  const shutterPivot = new THREE.Group(); domeGroup.add(shutterPivot);
+  shutterPivot.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.012, 12, 36, Math.PI / 2 - slit / 2 - 0.03, slit + 0.06, 0, Math.PI / 2),
+    std(0xc9d0dd, { roughness: 0.4, metalness: 0.4, side: THREE.DoubleSide })));
+  const scopePivot = new THREE.Group(); scopePivot.position.y = 0.32; domeGroup.add(scopePivot);
+  domeGroup.add(cyl(0.09, 0.14, 0.32, std(0x3a4152, { metalness: 0.5 }), 0, 0.16, 0, 16));
+  const tubeO = mesh(new THREE.CylinderGeometry(0.17, 0.15, 1.45, 32, 1, true), std(0x2c3854, { metalness: 0.7, roughness: 0.3 }), 0, 0, 0.42);
+  tubeO.rotation.x = Math.PI / 2; scopePivot.add(tubeO);
+  const lensO = mesh(new THREE.CircleGeometry(0.165, 32), new THREE.MeshBasicMaterial({ color: 0x9fcfff }), 0, 0, 1.145); scopePivot.add(lensO);
+
+  // signpost (About)
+  const signTex = canvasTex(512, 300, (g, w, h) => {
+    g.fillStyle = '#f1e9d8'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#3b3326'; g.lineWidth = 10; g.strokeRect(12, 12, w - 24, h - 24);
+    g.fillStyle = '#2a2318'; g.textAlign = 'center';
+    g.font = '700 30px Inter, sans-serif'; g.fillText('THE OBSERVATORY OF', w / 2, 92);
+    g.font = '800 60px Inter, sans-serif'; g.fillText('Nabeeha', w / 2, 170);
+    g.fillText('Mahanta', w / 2, 236);
+  });
+  const sign = new THREE.Group();
+  const sx = 2.25, sz = 1.85; sign.position.set(sx, groundY(sx, sz), sz); sign.rotation.y = 0.35;
+  sign.add(cyl(0.035, 0.04, 1.1, std(0x5a4632), 0, 0.55, 0, 10));
+  const signBoard = box(1.0, 0.58, 0.05, new THREE.MeshStandardMaterial({ map: signTex, emissiveMap: signTex, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.8 }), 0, 1.05, 0.03);
+  sign.add(signBoard); outside.add(sign);
+
+  // mailbox (Contact)
+  const mailbox = new THREE.Group();
+  const mx = -2.0, mz = 1.95; mailbox.position.set(mx, groundY(mx, mz), mz); mailbox.rotation.y = -0.2;
+  mailbox.add(box(0.07, 0.95, 0.07, std(0x4a3a2a), 0, 0.47, 0));
+  const red = std(0xb7353b, { roughness: 0.45, metalness: 0.2 });
+  mailbox.add(box(0.34, 0.24, 0.5, red, 0, 1.06, 0));
+  const top = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.5, 24, 1, false, 0, Math.PI), red, 0, 1.18, 0);
+  top.rotation.x = Math.PI / 2; top.rotation.z = Math.PI / 2; mailbox.add(top);
+  const flag = box(0.03, 0.22, 0.08, std(0xffc24a, { emissive: 0x332000 }), 0.19, 1.24, -0.1); mailbox.add(flag);
+  outside.add(mailbox);
+
+  // path lights to the door
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xffcf86 });
+  [[0.55, 1.75], [-0.35, 1.85], [0.7, 2.6], [-0.2, 2.75], [0.85, 3.5], [0.0, 3.65]].forEach(([x, z]) => {
+    const y = groundY(x, z);
+    outside.add(cyl(0.015, 0.02, 0.22, std(0x2b2f3a), x, y + 0.11, z, 8));
+    outside.add(mesh(new THREE.SphereGeometry(0.045, 12, 8), lampMat, x, y + 0.24, z));
+  });
+  const pathGlow = new THREE.PointLight(0xffb867, 1.2, 3.5, 2); pathGlow.position.set(0.3, 1.2, 2.4); outside.add(pathGlow);
+
+  // a constellation in the sky (Off duty)
+  const cons = new THREE.Group(); cons.position.set(-10, 15, -26); outside.add(cons);
+  const cPts = [[-3.2, 1.0, 0], [-1.6, 2.2, 0], [0, 1.4, 0], [1.4, 2.6, 0], [2.8, 1.2, 0], [1.2, -0.4, 0], [-0.6, -1.4, 0]];
+  {
+    const n = cPts.length, p = new Float32Array(n * 3), s = new Float32Array(n), ph = new Float32Array(n), c = new Float32Array(n * 3);
+    cPts.forEach((q, i) => { p.set(q, i * 3); s[i] = 13 + (i % 3) * 3; ph[i] = i * 1.7; c.set([1, 0.86, 0.6], i * 3); });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(p, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(s, 1));
+    g.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1)); g.setAttribute('aColor', new THREE.BufferAttribute(c, 3));
+    cons.add(new THREE.Points(g, starMat));
+    const lp = []; [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [5, 6]].forEach(([a, b]) => lp.push(...cPts[a], ...cPts[b]));
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
+    cons.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0xf2c58a, transparent: true, opacity: 0.45 })));
+    const hit = mesh(new THREE.SphereGeometry(3.6, 8, 6), new THREE.MeshBasicMaterial()); hit.visible = false; cons.add(hit);
+  }
+
+  // outside lights
+  outside.add(new THREE.HemisphereLight(0x4a64a0, 0x0a0f1a, 1.1));
+  const moon = new THREE.DirectionalLight(0xb9ccff, 2.2); moon.position.set(-6, 7, 5); outside.add(moon);
+  const rim = new THREE.DirectionalLight(0x7f9cff, 1.4); rim.position.set(5, 3, -6); outside.add(rim);
+  const domeGlow = new THREE.PointLight(0xffa955, 6, 3.2, 2); domeGlow.position.set(0, 0.45, 0); domeGroup.add(domeGlow);
+
+  // shooting star
+  const streakMat = new THREE.ShaderMaterial({
+    uniforms: { uA: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `uniform float uA; varying vec2 vUv; void main(){ float a = pow(vUv.x, 3.0) * (1.0 - abs(vUv.y - 0.5) * 2.0); gl_FragColor = vec4(0.85,0.92,1.0, a * uA); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  const streak = mesh(new THREE.PlaneGeometry(3.2, 0.035), streakMat); outside.add(streak);
+  let streakT = -1, nextStreak = 4;
+  const streakDir = new V3(), streakStart = new V3();
+
+  /* =====================================================
+     INSIDE
+     ===================================================== */
+  const inside = new THREE.Group(); inside.position.copy(INSIDE); inside.visible = false; scene.add(inside);
+  const RR = 6;
+  // floor
+  const floorTex = canvasTex(1024, 1024, (g, w, h) => {
+    g.fillStyle = '#3a2a20'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 16; i++) {
+      g.fillStyle = `hsl(24, ${28 + (i % 3) * 4}%, ${17 + ((i * 7) % 5)}%)`; g.fillRect(i * 64, 0, 62, h);
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(i * 64 + 62, 0, 2, h);
+      for (let k = 0; k < 3; k++) { g.fillRect(i * 64, ((i * 211 + k * 373) % h), 62, 2); }
+    }
+  });
+  floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(2, 2);
+  const floorI = mesh(new THREE.CircleGeometry(RR, 64), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.75 }));
+  floorI.rotation.x = -Math.PI / 2; inside.add(floorI);
+  const rug = mesh(new THREE.CircleGeometry(2.1, 64), std(0x2b2346, { roughness: 1 }), 0, 0.006, 0); rug.rotation.x = -Math.PI / 2; inside.add(rug);
+  const rugRing = mesh(new THREE.RingGeometry(1.85, 1.95, 64), new THREE.MeshBasicMaterial({ color: 0xc89a54 }), 0, 0.008, 0); rugRing.rotation.x = -Math.PI / 2; inside.add(rugRing);
+  // walls & dome
+  inside.add(mesh(new THREE.CylinderGeometry(RR, RR, 3, 72, 1, true), std(0x283044, { roughness: 0.9, side: THREE.BackSide }), 0, 1.5, 0));
+  inside.add(mesh(new THREE.CylinderGeometry(RR - 0.02, RR - 0.02, 0.9, 72, 1, true), std(0x3b2b22, { roughness: 0.8, side: THREE.BackSide }), 0, 0.45, 0));
+  const slitI = 0.55;
+  inside.add(mesh(new THREE.SphereGeometry(RR, 72, 36, Math.PI * 1.5 + slitI / 2, Math.PI * 2 - slitI, 0, Math.PI / 2),
+    std(0xb7bfcf, { roughness: 0.45, metalness: 0.4, side: THREE.DoubleSide }), 0, 3, 0));
+  const ribMat = std(0x8e97aa, { metalness: 0.6, roughness: 0.4 });
+  for (let k = 0; k < 8; k++) {
+    if (k === 4) continue;
+    const rib = mesh(new THREE.TorusGeometry(RR - 0.03, 0.04, 6, 64, Math.PI), ribMat, 0, 3, 0);
+    rib.rotation.y = k * Math.PI / 8; inside.add(rib);
+  }
+  const baseRing = mesh(new THREE.TorusGeometry(RR - 0.05, 0.08, 8, 96), ribMat, 0, 3, 0); baseRing.rotation.x = Math.PI / 2; inside.add(baseRing);
+
+  // telescope (Research)
+  const scope = new THREE.Group(); inside.add(scope);
+  const navy = std(0x24324f, { metalness: 0.65, roughness: 0.32 }), white = std(0xe9edf4, { metalness: 0.3, roughness: 0.35 });
+  scope.add(cyl(0.32, 0.45, 1.3, white, 0, 0.65, 0, 32));
+  scope.add(box(0.62, 0.3, 0.62, navy, 0, 1.42, 0));
+  scope.add(box(0.1, 0.75, 0.24, navy, 0.52, 1.85, 0), box(0.1, 0.75, 0.24, navy, -0.52, 1.85, 0));
+  const tPivot = new THREE.Group(); tPivot.position.y = 2.05; tPivot.rotation.order = 'YXZ'; tPivot.rotation.y = Math.PI; tPivot.rotation.x = -0.85; scope.add(tPivot);
+  const tube = mesh(new THREE.CylinderGeometry(0.4, 0.4, 3.4, 48, 1, true), white, 0, 0, 0.55); tube.rotation.x = Math.PI / 2; tPivot.add(tube);
+  [-1.15, 0.2, 2.2].forEach(z => { const r = mesh(new THREE.TorusGeometry(0.41, 0.045, 10, 48), navy, 0, 0, z); tPivot.add(r); });
+  const capB = mesh(new THREE.CircleGeometry(0.4, 40), navy, 0, 0, -1.15); capB.rotation.y = Math.PI; tPivot.add(capB);
+  const lensI = mesh(new THREE.CircleGeometry(0.37, 40), new THREE.MeshBasicMaterial({ color: 0x6fa8ff, transparent: true, opacity: 0.55 }), 0, 0, 2.21); tPivot.add(lensI);
+  const finder = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.9, 16), navy, 0, 0.5, 0.9); finder.rotation.x = Math.PI / 2; tPivot.add(finder);
+  const ep = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 12), navy, 0.3, 0.25, -0.95); tPivot.add(ep);
+  const cw = mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 10), navy, 0, 0, 0); cw.rotation.z = Math.PI / 2; tPivot.add(cw);
+
+  // desk + monitor (Experience)
+  const screenTex = canvasTex(640, 384, (g, w, h) => {
+    g.fillStyle = '#0b1226'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#7cc7ff'; g.font = '600 22px monospace'; g.fillText('> experience.log', 24, 40);
+    g.fillStyle = '#c3cde6'; g.font = '18px monospace';
+    ['2026  Data Analyst · Metroll', '2024  Research Intern · Aberystwyth', '2022  Physics Mentor · Wales'].forEach((t, i) => g.fillText(t, 24, 80 + i * 30));
+    g.strokeStyle = 'rgba(124,199,255,.35)'; g.strokeRect(24, 190, w - 48, h - 214);
+    for (let i = 0; i < 70; i++) { const x = 34 + Math.random() * (w - 70), y = 200 + (h - 236) * (1 - (x - 34) / (w - 70)) * 0.8 + Math.random() * 40;
+      g.fillStyle = 'rgba(242,178,96,.9)'; g.beginPath(); g.arc(x, y, 3, 0, 7); g.fill(); }
+    g.strokeStyle = '#ff6b6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(34, 215); g.lineTo(w - 34, h - 40); g.stroke();
+  });
+  const desk = new THREE.Group(); place(desk, 100, 4.5); inside.add(desk);
+  const wood = std(0x6b4a33, { roughness: 0.6 });
+  desk.add(box(2.1, 0.07, 0.9, wood, 0, 0.88, 0));
+  [[-0.98, -0.38], [0.98, -0.38], [-0.98, 0.38], [0.98, 0.38]].forEach(([x, z]) => desk.add(box(0.06, 0.86, 0.06, wood, x, 0.43, z)));
+  desk.add(box(0.06, 0.3, 0.06, navy, 0, 1.07, -0.28), box(0.3, 0.02, 0.2, navy, 0, 0.93, -0.28));
+  desk.add(box(1.08, 0.66, 0.05, std(0x111520), 0, 1.5, -0.3));
+  const screen = mesh(new THREE.PlaneGeometry(1.0, 0.6), new THREE.MeshBasicMaterial({ map: screenTex }), 0, 1.5, -0.27); desk.add(screen);
+  desk.add(box(0.7, 0.02, 0.22, std(0x22283a), 0, 0.93, 0.12));
+  const paper = box(0.3, 0.025, 0.4, std(0xf3f0e6, { roughness: 1 }), 0.7, 0.93, 0.12); paper.rotation.y = 0.2; desk.add(paper);
+  desk.add(cyl(0.05, 0.045, 0.12, std(0xc84c3c), -0.6, 0.98, 0.15, 16));
+  desk.add(cyl(0.09, 0.11, 0.04, navy, -0.85, 0.94, -0.25, 16), cyl(0.015, 0.015, 0.45, navy, -0.85, 1.16, -0.25, 8));
+  const shade = mesh(new THREE.ConeGeometry(0.14, 0.18, 24, 1, true), std(0x2f6f5a, { side: THREE.DoubleSide }), -0.78, 1.38, -0.2); shade.rotation.z = -0.5; desk.add(shade);
+  const deskLamp = new THREE.PointLight(0xffc27a, 4, 4, 2); deskLamp.position.set(-0.7, 1.3, -0.1); desk.add(deskLamp);
+  // chair
+  const chair = new THREE.Group(); chair.position.set(0.1, 0, 0.75); chair.rotation.y = 0.25; desk.add(chair);
+  chair.add(box(0.5, 0.06, 0.48, std(0x1f2a44), 0, 0.5, 0), box(0.5, 0.55, 0.06, std(0x1f2a44), 0, 0.8, 0.23), cyl(0.03, 0.03, 0.47, navy, 0, 0.24, 0, 8), cyl(0.25, 0.25, 0.03, navy, 0, 0.02, 0, 16));
+
+  // bookshelf (Field notes)
+  const shelf = new THREE.Group(); place(shelf, -100, 5.3); inside.add(shelf);
+  const sWood = std(0x4e3526, { roughness: 0.7 });
+  shelf.add(box(0.05, 2.3, 0.42, sWood, -0.85, 1.15, 0), box(0.05, 2.3, 0.42, sWood, 0.85, 1.15, 0), box(1.75, 2.3, 0.03, sWood, 0, 1.15, -0.2));
+  [0.03, 0.6, 1.17, 1.74, 2.3].forEach(y => shelf.add(box(1.75, 0.04, 0.42, sWood, 0, y, 0)));
+  const bookCols = [0x7b2d3b, 0x264b6e, 0xc79a4a, 0x2f5e55, 0xe8e0cc, 0x5b3d7a, 0x9c4f2e, 0x1d2f4f];
+  [0.05, 0.62, 1.19, 1.76].forEach((y, s) => {
+    let x = -0.8;
+    while (x < 0.72) {
+      const bw = 0.06 + Math.random() * 0.07, bh = 0.32 + Math.random() * 0.17;
+      if (Math.random() < 0.08 && x > -0.6) { x += 0.12; continue; }
+      const b = box(bw, bh, 0.28, std(bookCols[(Math.random() * bookCols.length) | 0], { roughness: 0.85 }), x + bw / 2, y + bh / 2, 0.02);
+      shelf.add(b); x += bw + 0.008;
+    }
+  });
+
+  // globe (Off duty)
+  const lands = [
+    [[-17,21],[-10,35],[10,37],[32,31],[43,12],[51,11],[40,-15],[35,-25],[20,-35],[12,-17],[9,4],[-8,5],[-17,14]],
+    [[-10,36],[0,43],[-4,48],[5,54],[10,58],[5,62],[15,69],[30,70],[40,66],[40,46],[28,41],[20,40],[12,44],[15,38],[5,43]],
+    [[40,46],[40,66],[60,70],[100,77],[140,72],[180,66],[160,60],[140,52],[130,42],[122,30],[120,22],[108,20],[105,10],[100,13],[103,1],[98,8],[95,15],[90,22],[80,15],[77,8],[72,20],[66,25],[57,26],[50,30],[44,13],[35,30],[36,36]],
+    [[114,-22],[122,-18],[131,-12],[137,-12],[142,-11],[146,-19],[153,-26],[150,-37],[141,-38],[131,-31],[115,-34]],
+    [[-168,66],[-140,70],[-95,72],[-80,63],[-60,55],[-66,45],[-75,35],[-80,25],[-97,26],[-97,18],[-88,15],[-83,9],[-79,8],[-92,15],[-105,21],[-117,32],[-124,40],[-124,48],[-135,58],[-152,60],[-166,60]],
+    [[-80,9],[-60,10],[-50,0],[-35,-6],[-40,-22],[-48,-28],[-58,-38],[-65,-55],[-72,-50],[-71,-30],[-70,-18],[-81,-5]],
+    [[-6,50],[2,51],[0,53],[-2,56],[-3,58.5],[-6,57],[-5,54]], [[130,31],[135,34],[140,35],[141,41],[145,44],[141,45],[139,38],[132,34]],
+    [[131,-1],[141,-3],[150,-10],[142,-9],[138,-8]], [[-50,60],[-20,70],[-20,82],[-60,82],[-55,70]], [[95,5],[105,-6],[115,-8],[118,-3],[110,1],[100,2]]
+  ];
+  const visited = [[28.6,77.2,1],[27.7,85.3],[22.3,114.2],[22.2,113.5],[21.0,105.8],[13.8,100.5],[1.35,103.8],[35.7,139.7],[-9.4,147.2],[-35.3,149.1],[51.5,-0.1],[55.9,-3.2],[54.2,-4.5]];
+  const globeTex = canvasTex(2048, 1024, (g, w, h) => {
+    const X = lon => (lon + 180) / 360 * w, Y = lat => (90 - lat) / 180 * h;
+    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#173a66'); grd.addColorStop(0.5, '#1f5a8f'); grd.addColorStop(1, '#173a66');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 2;
+    for (let lon = -180; lon <= 180; lon += 30) { g.beginPath(); g.moveTo(X(lon), 0); g.lineTo(X(lon), h); g.stroke(); }
+    for (let lat = -60; lat <= 60; lat += 30) { g.beginPath(); g.moveTo(0, Y(lat)); g.lineTo(w, Y(lat)); g.stroke(); }
+    g.fillStyle = '#d8c79c'; g.strokeStyle = '#b39d6b'; g.lineWidth = 3;
+    lands.forEach(poly => { g.beginPath(); poly.forEach(([lo, la], i) => i ? g.lineTo(X(lo), Y(la)) : g.moveTo(X(lo), Y(la))); g.closePath(); g.fill(); g.stroke(); });
+    visited.forEach(([la, lo, home]) => { g.fillStyle = home ? '#e0453a' : '#f2b260'; g.strokeStyle = '#1b1208'; g.lineWidth = 3;
+      g.beginPath(); g.arc(X(lo), Y(la), home ? 13 : 9, 0, 7); g.fill(); g.stroke(); });
+  });
+  const globe = new THREE.Group(); place(globe, -145, 4.2); inside.add(globe);
+  const brass = std(0xb08a4a, { metalness: 0.75, roughness: 0.3 });
+  globe.add(cyl(0.28, 0.32, 0.06, wood, 0, 0.03, 0, 32), cyl(0.04, 0.05, 0.9, wood, 0, 0.48, 0, 12));
+  const gTilt = new THREE.Group(); gTilt.position.y = 1.35; gTilt.rotation.z = 0.41; globe.add(gTilt);
+  const gRing = mesh(new THREE.TorusGeometry(0.53, 0.02, 8, 64), brass); gTilt.add(gRing);
+  const earth = mesh(new THREE.SphereGeometry(0.48, 64, 32), new THREE.MeshStandardMaterial({ map: globeTex, roughness: 0.55, metalness: 0.05 })); gTilt.add(earth);
+  earth.rotation.y = -1.9;
+
+  // framed portrait (About) — drop assets/photo.jpg in later
+  const portraitTex = canvasTex(512, 640, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#26375f'); grd.addColorStop(1, '#0f1730'); g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.arc(w / 2, 250, 95, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(w / 2, 560, 170, 150, 0, Math.PI, 0); g.fill();
+    g.fillStyle = '#f2b260'; g.font = '700 30px Inter, sans-serif'; g.textAlign = 'center'; g.fillText('Photo coming soon', w / 2, 90);
+  });
+  const portrait = new THREE.Group(); place(portrait, -40, RR - 0.08, 1.85); inside.add(portrait);
+  portrait.add(box(1.0, 1.24, 0.06, std(0xb08a4a, { metalness: 0.6, roughness: 0.35 })));
+  const photoMat = new THREE.MeshStandardMaterial({ map: portraitTex, roughness: 0.6 });
+  portrait.add(mesh(new THREE.PlaneGeometry(0.84, 1.06), photoMat, 0, 0, 0.035));
+  new THREE.TextureLoader().load('assets/photo.jpg', t => { t.colorSpace = THREE.SRGBColorSpace; photoMat.map = t; photoMat.needsUpdate = true; }, undefined, () => {});
+  const plateTex = canvasTex(512, 96, (g, w, h) => { g.fillStyle = '#1b1408'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2d6a2'; g.font = '700 34px Inter, sans-serif'; g.textAlign = 'center'; g.fillText('NABEEHA MAHANTA', w / 2, 60); });
+  portrait.add(box(0.7, 0.13, 0.03, new THREE.MeshStandardMaterial({ map: plateTex, metalness: 0.5, roughness: 0.4 }), 0, -0.78, 0.02));
+  const picLight = new THREE.SpotLight(0xffe2b0, 8, 4, 0.6, 0.6, 2); picLight.position.set(0, 1.1, 0.9); picLight.target.position.set(0, 0, 0); portrait.add(picLight, picLight.target);
+
+  // her CME poster on the wall (Research)
+  const poster = new THREE.Group(); place(poster, 145, RR - 0.08, 1.8); inside.add(poster);
+  poster.add(box(1.18, 1.62, 0.05, std(0x161b26)));
+  const posterMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+  poster.add(mesh(new THREE.PlaneGeometry(1.08, 1.53), posterMat, 0, 0, 0.03));
+  new THREE.TextureLoader().load('assets/cme-poster.jpg', t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; posterMat.map = t; posterMat.needsUpdate = true; });
+  const posLight = new THREE.SpotLight(0xfff0d8, 9, 4, 0.6, 0.6, 2); posLight.position.set(0, 1.2, 1.0); posLight.target.position.set(0, 0, 0); poster.add(posLight, posLight.target);
+
+  // radio transmitter (Contact)
+  const radioTex = canvasTex(512, 256, (g, w, h) => {
+    g.fillStyle = '#2b2219'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#d9c9a3'; g.fillRect(24, 24, 250, 90); g.fillStyle = '#2b2219'; for (let i = 0; i < 12; i++) g.fillRect(34 + i * 20, 40 + (i % 2) * 6, 2, 58);
+    g.fillStyle = '#c0392b'; g.fillRect(150, 30, 3, 78);
+    g.fillStyle = '#111'; for (let r = 0; r < 6; r++) for (let c = 0; c < 9; c++) { g.beginPath(); g.arc(320 + c * 20, 40 + r * 20, 6, 0, 7); g.fill(); }
+    ['#9aa3b4', '#9aa3b4', '#9aa3b4'].forEach((col, i) => { g.fillStyle = col; g.beginPath(); g.arc(70 + i * 90, 180, 26, 0, 7); g.fill(); g.fillStyle = '#333'; g.fillRect(68 + i * 90, 156, 4, 22); });
+    g.fillStyle = '#f2d6a2'; g.font = '700 22px monospace'; g.fillText('TX · OPEN CHANNEL', 300, 220);
+  });
+  const radio = new THREE.Group(); place(radio, 45, 4.6); inside.add(radio);
+  radio.add(cyl(0.4, 0.4, 0.04, wood, 0, 0.78, 0, 32), cyl(0.04, 0.06, 0.76, wood, 0, 0.38, 0, 10), cyl(0.22, 0.25, 0.03, wood, 0, 0.015, 0, 20));
+  const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.32, 0.28), [std(0x3a2a1c), std(0x3a2a1c), std(0x3a2a1c), std(0x3a2a1c), new THREE.MeshStandardMaterial({ map: radioTex, roughness: 0.6 }), std(0x3a2a1c)]);
+  rBody.position.y = 0.96; radio.add(rBody);
+  const ant = cyl(0.008, 0.008, 0.7, std(0xcfd5df, { metalness: 0.8 }), 0.22, 1.42, -0.05, 6); ant.rotation.z = -0.35; radio.add(ant);
+  const led = mesh(new THREE.SphereGeometry(0.022, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3b3b }), -0.24, 1.08, 0.145); radio.add(led);
+
+  // door + exit sign (back outside)
+  const doorI = new THREE.Group(); place(doorI, 0, RR - 0.06); inside.add(doorI);
+  doorI.add(box(1.3, 2.3, 0.06, std(0x1d1712)), box(1.1, 2.1, 0.05, std(0x4a3426, { roughness: 0.6 }), 0, 1.05, 0.03));
+  doorI.children[0].position.y = 1.15;
+  doorI.add(mesh(new THREE.SphereGeometry(0.04, 12, 8), brass, 0.42, 1.05, 0.08));
+  const exitTex = canvasTex(256, 96, (g, w, h) => { g.fillStyle = '#0c3b23'; g.fillRect(0, 0, w, h); g.fillStyle = '#7dffb2'; g.font = '800 46px Inter, sans-serif'; g.textAlign = 'center'; g.fillText('EXIT', w / 2, 64); });
+  doorI.add(box(0.55, 0.2, 0.05, new THREE.MeshBasicMaterial({ map: exitTex }), 0, 2.45, 0.04));
+
+  // interior lights
+  inside.add(new THREE.HemisphereLight(0x8090c0, 0x2a1d14, 0.55));
+  const ceil = new THREE.PointLight(0xffd9a8, 22, 14, 2); ceil.position.set(0, 4.6, 0); inside.add(ceil);
+  [60, 180, -70].forEach(d => { const a = THREE.MathUtils.degToRad(d);
+    inside.add(mesh(new THREE.SphereGeometry(0.08, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd08a }), Math.sin(a) * 5.85, 2.55, Math.cos(a) * 5.85));
+    const l = new THREE.PointLight(0xffb86b, 5, 5, 2); l.position.set(Math.sin(a) * 5.5, 2.5, Math.cos(a) * 5.5); inside.add(l); });
+  const redLight = new THREE.PointLight(0xff3b3b, 2.5, 5, 2); redLight.position.set(0, 0.4, -3); inside.add(redLight);
+  const starlight = new THREE.DirectionalLight(0x8fb0ff, 0.8); starlight.position.set(0, 9, -6); inside.add(starlight, starlight.target);
+
+  /* =====================================================
+     HOTSPOTS
+     ===================================================== */
+  const markersEl = document.getElementById('markers');
+  const hotspots = [];
+  function hot(area, obj, label, opts) {
+    const h = Object.assign({ area, obj, label, offset: new V3(0, 0, 0), d: 2.6, hgt: 0.5 }, opts);
+    const el = document.createElement('button');
+    el.type = 'button'; el.className = 'marker off' + (h.action ? ' door' : '');
+    el.innerHTML = '<span class="ring"></span><span class="lbl">' + label + '</span>';
+    el.addEventListener('click', e => { e.stopPropagation(); window.UI.startExploring(); activate(h); });
+    markersEl.appendChild(el); h.el = el;
+    obj.traverse(o => { o.userData.hot = h; });
+    hotspots.push(h);
+    return h;
+  }
+  const outsideCam = () => new V3(Math.sin(0.45) * 10.5, 2.6, Math.cos(0.45) * 10.5);
+  hot('outside', door, 'Enter the observatory', { action: 'enter', offset: new V3(0, 0.75, 0) });
+  hot('outside', domeGroup, 'Research', { sec: 'research', offset: new V3(0, 1.25, 0), d: 5.5, hgt: 1.2 });
+  hot('outside', sign, 'About me', { sec: 'about', offset: new V3(0, 1.55, 0), d: 2.6, hgt: 0.6, look: new V3(0, 1.0, 0) });
+  hot('outside', mailbox, 'Contact', { sec: 'contact', offset: new V3(0, 1.5, 0), d: 2.4, hgt: 0.6, look: new V3(0, 1.0, 0) });
+  hot('outside', cons, 'Off duty', { sec: 'offduty', offset: new V3(0, 3.6, 0), sky: true });
+  hot('inside', scope, 'Research', { sec: 'research', offset: new V3(0, 3.3, -1.4), look: new V3(0, 2.0, -0.4), fixedDir: new V3(0.75, 0, 0.66), d: 4.4, hgt: 0.9 });
+  hot('inside', poster, 'My CME poster', { sec: 'research', offset: new V3(0, 0.95, 0), d: 2.3, hgt: 0 });
+  hot('inside', desk, 'Experience & CV', { sec: 'experience', offset: new V3(0, 2.0, 0), look: new V3(0, 1.25, 0), d: 2.5, hgt: 0.45 });
+  hot('inside', shelf, 'Field notes', { sec: 'notes', offset: new V3(0, 2.6, 0), look: new V3(0, 1.2, 0), d: 3.0, hgt: 0.2 });
+  hot('inside', globe, 'Off duty', { sec: 'offduty', offset: new V3(0, 2.0, 0), look: new V3(0, 1.25, 0), d: 2.8, hgt: 0.35 });
+  hot('inside', portrait, 'About me', { sec: 'about', offset: new V3(0, 0.85, 0), d: 2.4, hgt: 0 });
+  hot('inside', radio, 'Contact', { sec: 'contact', offset: new V3(0, 1.7, 0), look: new V3(0, 1.0, 0), d: 1.9, hgt: 0.4 });
+  hot('inside', doorI, 'Step outside', { action: 'exit', offset: new V3(0, 2.8, 0) });
+
+  /* =====================================================
+     CAMERA
+     ===================================================== */
+  const st = { area: 'outside', mode: 'orbit', yaw: 0.45, pitch: 0.14, dist: 10.5, fov: 40 };
+  const AREA = {
+    outside: { center: new V3(0, 0, 0), target: new V3(0, 1.7, 0), dist: 10.5, fov: 40, yaw: 0.45, pitch: 0.14, pitchMin: 0.03, pitchMax: 0.55, yawMin: -1.3, yawMax: 1.9 },
+    inside: { center: INSIDE.clone(), target: new V3(0, 1.6, 0), dist: 3.9, fov: 62, yaw: 0.0, pitch: 0.12, pitchMin: -0.15, pitchMax: 0.6, yawMin: -Infinity, yawMax: Infinity }
+  };
+  const des = { pos: new V3(), look: new V3() }, cur = { pos: new V3(), look: new V3() };
+  let focusHot = null;
+  function orbitDesired() {
+    const A = AREA[st.area], t = A.target.clone().add(A.center);
+    const dist = A.dist * (narrow ? (st.area === 'outside' ? 1.35 : 1.1) : 1);
+    des.pos.set(t.x + dist * Math.sin(st.yaw) * Math.cos(st.pitch), t.y + dist * Math.sin(st.pitch), t.z + dist * Math.cos(st.yaw) * Math.cos(st.pitch));
+    des.look.copy(t);
+  }
+  function focusDesired(h) {
+    const wp = new V3(); h.obj.getWorldPosition(wp);
+    if (h.sky) {
+      orbitDesired(); des.look.copy(wp); des.pos.lerp(wp, 0.12); return;
+    }
+    const look = h.look ? h.obj.localToWorld(h.look.clone()) : wp.clone();
+    let dir;
+    if (h.fixedDir) dir = h.fixedDir.clone().normalize();
+    else {
+      const from = st.area === 'inside' ? AREA.inside.center.clone().setY(look.y) : outsideCam().setY(look.y);
+      dir = from.sub(look).setY(0).normalize();
+    }
+    des.pos.copy(look).addScaledVector(dir, h.d * (narrow ? 1.25 : 1)); des.pos.y += h.hgt;
+    des.look.copy(look);
+  }
+
+  /* ---------- area switching ---------- */
+  const fadeEl = document.getElementById('fade'), areaBtn = document.getElementById('areaBtn');
+  let busy = false;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  async function switchArea(area, then) {
+    if (busy) return; busy = true;
+    window.UI.close(true);
+    fadeEl.classList.add('on'); await wait(reduceMotion ? 50 : 380);
+    st.area = area; st.mode = 'orbit'; focusHot = null;
+    const A = AREA[area]; st.yaw = A.yaw; st.pitch = A.pitch;
+    outside.visible = area === 'outside'; inside.visible = area === 'inside';
+    sky.position.copy(A.center);
+    areaBtn.textContent = area === 'outside' ? 'Go inside ↗' : 'Step outside ↙';
+    if (then) then(true); else { orbitDesired(); cur.pos.copy(des.pos); cur.look.copy(des.look); }
+    camera.fov = A.fov * (narrow ? 1.08 : 1); camera.updateProjectionMatrix();
+    await wait(60); fadeEl.classList.remove('on'); busy = false;
+  }
+  async function enter() {
+    if (st.area === 'inside' || busy) return;
+    // walk up to the door, then fade inside
+    const dp = new V3(); door.getWorldPosition(dp);
+    st.mode = 'focus'; focusHot = null;
+    des.look.copy(dp).setY(dp.y + 0.2); des.pos.copy(dp).add(new V3(0.25, 0.4, 2.2));
+    window.UI.close(true);
+    await wait(reduceMotion ? 0 : 700);
+    switchArea('inside');
+  }
+  function exit() { if (st.area === 'outside') return; switchArea('outside'); }
+
+  function activate(h) {
+    if (h.action === 'enter') return enter();
+    if (h.action === 'exit') return exit();
+    focusHot = h; st.mode = 'focus';
+    window.UI.open(h.sec);
+  }
+  function go(sec) {
+    const here = hotspots.find(h => h.area === st.area && h.sec === sec);
+    if (here) return activate(here);
+    const there = hotspots.find(h => h.sec === sec);
+    if (!there) return window.UI.open(sec);
+    switchArea(there.area, () => {
+      focusHot = there; st.mode = 'focus'; focusDesired(there); cur.pos.copy(des.pos); cur.look.copy(des.look);
+      window.UI.open(sec);
+    });
+  }
+  function unfocus() { focusHot = null; st.mode = 'orbit'; }
+
+  /* ---------- input: drag to look, click objects ---------- */
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let down = null, dragging = false, hovered = null;
+  function pick(x, y) {
+    ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hits = ray.intersectObject(st.area === 'outside' ? outside : inside, true);
+    for (const hit of hits) { if (hit.object.userData.hot) return hit.object.userData.hot; if (hit.object.isMesh && hit.object.visible) return null; }
+    return null;
+  }
+  canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, yaw: st.yaw, pitch: st.pitch }; dragging = false; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => {
+    if (down) {
+      const dx = e.clientX - down.x, dy = e.clientY - down.y;
+      if (!dragging && Math.hypot(dx, dy) > 5) { dragging = true; canvas.classList.add('grabbing'); window.UI.startExploring(); window.UI.hideHint(); if (st.mode === 'focus' && !busy) { st.mode = 'orbit'; } }
+      if (dragging) {
+        const A = AREA[st.area];
+        st.yaw = THREE.MathUtils.clamp(down.yaw - dx * 0.006, A.yawMin, A.yawMax);
+        st.pitch = THREE.MathUtils.clamp(down.pitch + dy * 0.004, A.pitchMin, A.pitchMax);
+      }
+      return;
+    }
+    const h = pick(e.clientX, e.clientY);
+    if (h !== hovered) { if (hovered) hovered.el.classList.remove('hover'); hovered = h; if (h) h.el.classList.add('hover'); canvas.classList.toggle('hot', !!h); }
+  });
+  canvas.addEventListener('pointerup', e => {
+    canvas.classList.remove('grabbing');
+    if (down && !dragging) { const h = pick(e.clientX, e.clientY); if (h) { window.UI.startExploring(); activate(h); } }
+    down = null; dragging = false;
+  });
+  canvas.addEventListener('pointercancel', () => { down = null; dragging = false; canvas.classList.remove('grabbing'); });
+
+  /* ---------- layout ---------- */
+  let W = 1, H = 1, narrow = false, offX = 0, offY = 0;
+  function resize() {
+    W = innerWidth; H = innerHeight; narrow = W / H < 1.05 || W < 760;
+    renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    camera.fov = AREA[st.area].fov * (narrow ? 1.08 : 1);
+    camera.updateProjectionMatrix();
+    starMat.uniforms.uPR.value = renderer.getPixelRatio();
+  }
+  addEventListener('resize', resize); resize();
+
+  /* ---------- markers ---------- */
+  const tmp = new V3(), camDir = new V3();
+  let frame = 0;
+  function updateMarkers() {
+    frame++;
+    camera.getWorldDirection(camDir);
+    for (const h of hotspots) {
+      if (h.area !== st.area || body.classList.contains('quick')) { h.el.classList.add('off'); continue; }
+      h.obj.getWorldPosition(tmp);
+      if (h.sky) tmp.add(h.offset); else tmp.copy(h.obj.localToWorld(h.offset.clone()));
+      const toP = tmp.clone().sub(camera.position);
+      const dist = toP.length();
+      if (toP.dot(camDir) <= 0) { h.el.classList.add('off'); continue; }
+      // hide markers hidden behind walls / objects (checked every few frames)
+      if (frame % 6 === 0 && !h.sky) {
+        ray.set(camera.position, toP.clone().normalize());
+        const hits = ray.intersectObject(st.area === 'outside' ? outside : inside, true);
+        h.blocked = false;
+        for (const hit of hits) {
+          if (!hit.object.isMesh || !hit.object.visible) continue;
+          if (hit.distance >= dist - 0.4) break;
+          if (hit.object.userData.hot === h) continue;
+          h.blocked = true; break;
+        }
+      }
+      const p = tmp.project(camera);
+      const x = (p.x + 1) / 2 * W, y = (1 - p.y) / 2 * H;
+      const off = h.blocked || x < -50 || x > W + 50 || y < 0 || y > H;
+      h.el.classList.toggle('off', off);
+      h.el.style.transform = `translate(${x - 9}px, ${y - 9}px)`;
+    }
+  }
+
+  /* ---------- animation loop ---------- */
+  const clock = new THREE.Clock();
+  const ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
+  let elapsed = 0, running = true;
+  orbitDesired(); cur.pos.copy(des.pos); cur.look.copy(des.look);
+
+  function render(dt) {
+    const t = reduceMotion ? 20 : elapsed;
+    // outside: dome opens, telescope rises
+    shutterPivot.rotation.x = -1.2 * ease((t - 0.8) / 3.0);
+    scopePivot.rotation.x = -(0.15 + 0.62 * ease((t - 2.6) / 3.2));
+    domeGroup.rotation.y = -0.8 + (reduceMotion ? 0 : Math.sin(t * 0.08) * 0.18);
+    lensO.material.color.setHSL(0.58, 0.8, 0.6 + 0.08 * Math.sin(t * 2.0));
+    // inside: globe spins, radio LED blinks, telescope slews gently
+    earth.rotation.y += reduceMotion ? 0 : dt * 0.25;
+    led.visible = reduceMotion || Math.sin(t * 5) > -0.2;
+    tPivot.rotation.y = Math.PI + (reduceMotion ? 0 : Math.sin(t * 0.15) * 0.12);
+    starMat.uniforms.uTime.value = t;
+    sky.rotation.z = t * 0.004;
+
+    if (!reduceMotion && st.area === 'outside') {
+      nextStreak -= dt;
+      if (nextStreak <= 0 && streakT < 0) {
+        streakT = 0; nextStreak = 6 + Math.random() * 8;
+        streakStart.set((Math.random() - 0.4) * 30, 10 + Math.random() * 6, -25);
+        const a = -0.35 - Math.random() * 0.35;
+        streakDir.set(Math.cos(a) * (Math.random() < 0.5 ? -1 : 1), Math.sin(a), 0).normalize();
+      }
+      if (streakT >= 0) {
+        streakT += dt; const p = streakT / 0.9;
+        streak.position.copy(streakStart).addScaledVector(streakDir, p * 14);
+        streak.lookAt(camera.position); streak.rotation.z = Math.atan2(streakDir.y, streakDir.x);
+        streakMat.uniforms.uA.value = Math.sin(Math.min(p, 1) * Math.PI);
+        if (p >= 1) { streakT = -1; streakMat.uniforms.uA.value = 0; }
+      }
+    }
+
+    // camera
+    if (st.mode === 'focus' && focusHot) focusDesired(focusHot);
+    else if (st.mode === 'orbit') {
+      if (!reduceMotion && !down && !body.classList.contains('exploring') && st.area === 'outside') st.yaw = AREA.outside.yaw + Math.sin(t * 0.12) * 0.12;
+      orbitDesired();
+    }
+    const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 3.2);
+    cur.pos.lerp(des.pos, k); cur.look.lerp(des.look, k);
+    camera.position.copy(cur.pos); camera.lookAt(cur.look);
+
+    // shift the view so the scene isn't hidden behind the intro text or the panel
+    const panelOpen = body.classList.contains('panel-open'), intro = !body.classList.contains('exploring');
+    let tx = 0, ty = 0;
+    if (!narrow) { if (panelOpen) tx = Math.min(580, W * 0.46) / 2 + 8; else if (intro && st.area === 'outside') tx = -W * 0.17; }
+    else { if (panelOpen) ty = H * 0.3; else if (intro && st.area === 'outside') ty = -H * 0.24; }
+    offX += (tx - offX) * (reduceMotion ? 1 : 0.08); offY += (ty - offY) * (reduceMotion ? 1 : 0.08);
+    camera.setViewOffset(W, H, offX, offY, W, H);
+
+    renderer.render(scene, camera);
+    updateMarkers();
+  }
+  function loop() {
+    if (!running) return;
+    const dt = Math.min(clock.getDelta(), 0.05);
+    elapsed += dt; render(dt);
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  window.__3d = {
+    go, unfocus,
+    toggleArea: () => (st.area === 'outside' ? enter() : exit()),
+    pause: () => { running = false; },
+    resume: () => { if (!running) { running = true; clock.getDelta(); loop(); } }
+  };
+  if (body.classList.contains('quick')) window.__3d.pause();
+}
+</script>
+</body>
+</html>
