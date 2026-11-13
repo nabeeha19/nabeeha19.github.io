@@ -167,7 +167,7 @@ body.panel-open #panel{transform:none}
 #travelMap{width:100%;height:auto;display:block;margin-top:6px}
 #travelMap .lbl{font-family:var(--sans);font-size:21px;fill:#c3cde6}
 #travelMap .home .lbl{fill:var(--gold);font-weight:600}
-.place-list{font-size:.78rem;color:#aab5d3;line-height:1.8;margin-top:6px}
+.sky-card .place-list{font-size:.78rem;color:#aab5d3;line-height:1.8;margin-top:6px}
 .place-list b{color:var(--gold);font-weight:600}
 .modes{display:grid;gap:10px}
 .mode{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
@@ -232,7 +232,7 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
 <div id="intro">
   <div class="eyebrow">Astrophysics · Data</div>
   <h1>Nabeeha<br><em>Mahanta</em></h1>
-  <p class="tagline">I turn <span class="hl">starlight</span> into data, and data into answers.</p>
+  <p class="tagline">Astrophysics researcher and data analyst working with <span class="hl">Milky Way star clusters</span> and business data.</p>
   <p class="sub">MSc (Advanced) Astronomy &amp; Astrophysics at ANU · Data Analyst at Metroll</p>
   <div class="btns">
     <button class="btn btn-primary" id="exploreBtn" type="button">Explore the observatory →</button>
@@ -260,7 +260,7 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
   <div class="inner">
     <div class="eyebrow">Astrophysics · Data</div>
     <h1>Nabeeha <em>Mahanta</em></h1>
-    <p class="tagline">I turn <span class="hl">starlight</span> into data, and data into answers.</p>
+    <p class="tagline">Astrophysics researcher and data analyst working with <span class="hl">Milky Way star clusters</span> and business data.</p>
     <p class="sub">MSc (Advanced) Astronomy &amp; Astrophysics at ANU · Data Analyst at Metroll</p>
     <div class="btns">
       <button class="btn btn-primary" id="to3dBtn" type="button">Explore the 3D observatory ✦</button>
@@ -281,10 +281,10 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
     <!-- ABOUT -->
     <section class="sec" data-sec="about" hidden>
       <div class="kicker">About me</div>
-      <h2>From stargazing to star clusters</h2>
+      <h2>Hi, I'm Nabeeha</h2>
       <p>I'm a master's student at the Australian National University (ANU), where my research asks whether the stellar mass function is universal across star clusters in the Milky Way, using data from Gaia DR3.</p>
       <p>Before ANU I completed a First-Class BSc in Astrophysics at Aberystwyth University in Wales. There I tracked coronal mass ejections from the Sun to Earth and built a catalogue of interplanetary CMEs as a research intern.</p>
-      <p>By day I'm a data analyst at Metroll, turning business data into clear insights with SQL, Python and Excel. Whether it's a star cluster or a sales report, I like finding the pattern hiding in the noise. A PhD is next on my list, once I've gathered more industry experience.</p>
+      <p>At Metroll, I use SQL, Python and Excel to untangle messy business data, which takes the same problem-solving as analysing star clusters. I plan to do a PhD once I've gained more industry experience.</p>
       <div class="origin">As a kid I admired the stars and was sure I'd go to one someday. I'm still working on that. For now, I study them.</div>
       <dl class="facts">
         <div><dt>Currently</dt><dd>MSc (Advanced), ANU</dd></div>
@@ -300,7 +300,7 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
     <section class="sec" data-sec="research" hidden>
       <div class="kicker">Research</div>
       <h2>What I'm observing</h2>
-      <p class="lede">From the stars in Milky Way clusters to eruptions on our own Sun: projects where I use large datasets to answer astrophysical questions.</p>
+      <p class="lede">My research uses large datasets to study star clusters in the Milky Way and eruptions from the Sun.</p>
 
       <div class="block">
         <div class="meta">MSc research · Research School of Astronomy &amp; Astrophysics, ANU · 2026–</div>
@@ -313,7 +313,7 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
 
       <div class="block">
         <div class="meta">BSc research · Aberystwyth University · 2024–2025</div>
-        <h3>From the Sun to Earth: predicting CME impacts</h3>
+        <h3>Predicting the impact of coronal mass ejections</h3>
         <p>Coronal mass ejections are huge eruptions of plasma from the Sun. By the time they reach Earth, the solar wind has reshaped them, which makes their impact hard to predict. I linked what we see near the Sun to what arrives at Earth across three solar cycles.</p>
         <div class="stats">
           <div class="stat"><b>292</b><span>CME–ICME pairs</span></div>
@@ -342,9 +342,10 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
             <h3>Data Analyst</h3>
             <div class="org">Metroll</div>
             <ul>
-              <li>Analyse datasets, identify trends and present clear insights to support decision-making</li>
-              <li>Data cleaning and reporting with SQL, Excel and Python</li>
-              <li>Communicate findings to technical and non-technical audiences</li>
+              <li>Analyse sales, inventory, order and invoice data across multiple branches</li>
+              <li>Built reports on sales rep and branch performance, and on how rebates affect results</li>
+              <li>Built a desktop app that converts invoices into Excel spreadsheets, replacing manual data entry</li>
+              <li>Clean and prepare data with SQL, Python and Excel, and present findings to technical and non-technical teams</li>
             </ul>
           </div>
           <div class="item">
@@ -390,7 +391,6 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
         <!-- To publish a note: replace the text and wrap the card in a link to the article -->
         <article class="note"><span class="no">NOTE 001</span><h3>The Sun sneezes. Should Earth worry?</h3><p>What a coronal mass ejection is, how it crosses 150 million km, and why some hit us harder than others.</p><span class="soon">Coming soon</span></article>
         <article class="note"><span class="no">NOTE 002</span><h3>Counting stars is harder than it sounds</h3><p>Why astronomers miss stars, mistake two stars for one, and how we correct for both.</p><span class="soon">Coming soon</span></article>
-        <article class="note"><span class="no">NOTE 003</span><h3>Your next idea here</h3><p>A slot for the next discovery that catches my eye.</p><span class="soon">Coming soon</span></article>
       </div>
     </section>
 
@@ -400,7 +400,7 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
       <h2>When the dome closes</h2>
       <p class="lede">Cloudy night, no observing. Here's what I'm up to instead.</p>
       <div class="fun-stats">
-        <div><b>13</b><span>places explored</span></div>
+        <div><b>12</b><span>places explored</span></div>
         <div><b>3</b><span>continents called home</span></div>
         <div><b>4</b><span>languages spoken</span></div>
         <div><b>∞</b><span>films on the watchlist</span></div>
@@ -409,7 +409,7 @@ body.quick .sec{background:#fff;border-radius:22px;padding:clamp(24px,4vw,44px);
         <h3>My travel constellation</h3>
         <small>Every star is a place I've been · gold star = home</small>
         <svg id="travelMap" viewBox="0 0 1000 540" role="img" aria-label="Star map of places Nabeeha has travelled"></svg>
-        <p class="place-list"><b>★ India</b> · Nepal · Hong Kong · Macau · Vietnam · Thailand · Singapore · Japan · Papua New Guinea · Australia · United Kingdom · Scotland · Isle of Man</p>
+        <p class="place-list"><b>★ India</b> · Nepal · Hong Kong · Macau · Vietnam · Thailand · Singapore · Japan · Papua New Guinea · Australia · United Kingdom · Isle of Man</p>
       </div>
       <div class="modes">
         <div class="mode"><span class="em">🎬</span><div><h3>Movie nights</h3><p>Horror, thrillers, romance, sci-fi: any genre, as long as it hooks me. My forever rewatch is <em>3 Idiots</em>: funny, and a reminder that you can become whatever you want.</p></div></div>
@@ -567,13 +567,13 @@ window.UI = (function(){
 
   // Travel constellation: [name, latitude, longitude, label dx, label dy, home?, star nudge x, y]
   var places = [
-    ["Scotland",55.9,-3.2, 14,-8], ["Isle of Man",54.2,-4.5, -150,6], ["United Kingdom",51.5,-0.1, -30,38],
+    ["Isle of Man",54.2,-4.5, -150,6], ["United Kingdom",52.5,-1.5, 14,26],
     ["India",28.6,77.2, -66,34, true], ["Nepal",27.7,85.3, 12,-14],
     ["Hong Kong",22.3,114.2, 14,-6], ["Macau",22.2,113.5, 14,26, false,-6,26], ["Vietnam",21.0,105.8, -96,-14],
     ["Thailand",13.8,100.5, -98,8], ["Singapore",1.35,103.8, 14,10], ["Japan",35.7,139.7, -62,-16],
     ["Papua New Guinea",-9.4,147.2, -190,34], ["Australia",-35.3,149.1, -118,8]
   ];
-  var links = [[0,1],[1,2],[2,3],[3,4],[4,7],[7,6],[6,5],[5,10],[7,8],[8,9],[9,11],[11,12]];
+  var links = [[0,1],[1,2],[2,3],[3,6],[6,5],[5,4],[4,9],[6,7],[7,8],[8,10],[10,11]];
   function pos(p){
     var x = 40 + (p[2] + 10) / 170 * 900, y = 30 + (62 - p[1]) / 105 * 480;
     if (p[2] < 5) x = 40 + (p[2] + 10) * 22;
@@ -839,7 +839,7 @@ if (!renderer || !renderer.getContext()) {
     g.fillStyle = '#0b1226'; g.fillRect(0, 0, w, h);
     g.fillStyle = '#7cc7ff'; g.font = '600 22px monospace'; g.fillText('> experience.log', 24, 40);
     g.fillStyle = '#c3cde6'; g.font = '18px monospace';
-    ['2026  Data Analyst · Metroll', '2024  Research Intern · Aberystwyth', '2022  Physics Mentor · Wales'].forEach((t, i) => g.fillText(t, 24, 80 + i * 30));
+    ['2026  Data Analyst · Metroll', '2024  Research Assistant · Aberystwyth', '2022  Physics Mentor · Cardiff'].forEach((t, i) => g.fillText(t, 24, 80 + i * 30));
     g.strokeStyle = 'rgba(124,199,255,.35)'; g.strokeRect(24, 190, w - 48, h - 214);
     for (let i = 0; i < 70; i++) { const x = 34 + Math.random() * (w - 70), y = 200 + (h - 236) * (1 - (x - 34) / (w - 70)) * 0.8 + Math.random() * 40;
       g.fillStyle = 'rgba(242,178,96,.9)'; g.beginPath(); g.arc(x, y, 3, 0, 7); g.fill(); }
@@ -889,7 +889,7 @@ if (!renderer || !renderer.getContext()) {
     [[-6,50],[2,51],[0,53],[-2,56],[-3,58.5],[-6,57],[-5,54]], [[130,31],[135,34],[140,35],[141,41],[145,44],[141,45],[139,38],[132,34]],
     [[131,-1],[141,-3],[150,-10],[142,-9],[138,-8]], [[-50,60],[-20,70],[-20,82],[-60,82],[-55,70]], [[95,5],[105,-6],[115,-8],[118,-3],[110,1],[100,2]]
   ];
-  const visited = [[28.6,77.2,1],[27.7,85.3],[22.3,114.2],[22.2,113.5],[21.0,105.8],[13.8,100.5],[1.35,103.8],[35.7,139.7],[-9.4,147.2],[-35.3,149.1],[51.5,-0.1],[55.9,-3.2],[54.2,-4.5]];
+  const visited = [[28.6,77.2,1],[27.7,85.3],[22.3,114.2],[22.2,113.5],[21.0,105.8],[13.8,100.5],[1.35,103.8],[35.7,139.7],[-9.4,147.2],[-35.3,149.1],[52.5,-1.5],[54.2,-4.5]];
   const globeTex = canvasTex(2048, 1024, (g, w, h) => {
     const X = lon => (lon + 180) / 360 * w, Y = lat => (90 - lat) / 180 * h;
     const grd = g.createLinearGradient(0, 0, 0, h); grd.addColorStop(0, '#173a66'); grd.addColorStop(0.5, '#1f5a8f'); grd.addColorStop(1, '#173a66');
